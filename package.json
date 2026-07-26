@@ -1,0 +1,12 @@
+{
+  "name": "nexo-salas-servidor",
+  "version": "1.0.0",
+  "description": "Servidor de senalizacion con salas para NEXO",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  }
+}

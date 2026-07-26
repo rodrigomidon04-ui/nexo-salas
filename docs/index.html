@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>NEXO</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #000;
+    color: #7dd3fc;
+    font-family: Arial, sans-serif;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  #pantalla-bienvenida {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    background: #000;
+    position: relative;
+  }
+  #titulo-nexo {
+    font-family: 'Quicksand', sans-serif;
+    font-weight: 600;
+    font-size: 26px;
+    letter-spacing: 6px;
+    color: #3ecbff;
+    text-shadow: 0 0 10px #3ecbff;
+    margin-bottom: 20px;
+  }
+  #cara-robot {
+    width: 220px;
+    height: 220px;
+    cursor: pointer;
+  }
+  .ojo {
+    fill: #3ecbff;
+    filter: drop-shadow(0 0 8px #3ecbff);
+    transition: all 0.4s ease;
+  }
+  .pupila {
+    fill: #041722;
+    transition: opacity 0.3s ease;
+  }
+  .sorprendido .pupila { transform: scale(1.3); }
+  .somnoliento .pupila, .dormido .pupila { opacity: 0; }
+  .guino .ojo-der { transform: scaleY(0.1); transform-origin: center; }
+  .guino .pupila-der { opacity: 0; }
+  .parpado {
+    stroke: #3ecbff;
+    stroke-width: 6;
+    fill: none;
+    stroke-linecap: round;
+    display: none;
+    filter: drop-shadow(0 0 6px #3ecbff);
+  }
+  .boca {
+    stroke: #3ecbff;
+    stroke-width: 6;
+    fill: none;
+    stroke-linecap: round;
+    filter: drop-shadow(0 0 6px #3ecbff);
+    transition: all 0.4s ease;
+  }
+  .zzz {
+    fill: #3ecbff;
+    font-size: 22px;
+    opacity: 0;
+    filter: drop-shadow(0 0 6px #3ecbff);
+  }
+
+  .feliz .boca { d: path("M 55 135 Q 100 180 145 135"); }
+  .sorprendido .boca { d: path("M 85 150 a 15 15 0 1 0 30 0 a 15 15 0 1 0 -30 0"); }
+  .sorprendido .ojo { transform: scale(1.15); }
+  .somnoliento .ojo { transform: scaleY(0.15); transform-origin: center; }
+  .somnoliento .boca { d: path("M 70 145 Q 100 155 130 145"); opacity: 0.6; }
+  .dormido .ojo { display: none; }
+  .dormido .parpado { display: block; }
+  .dormido .boca { d: path("M 85 150 a 15 15 0 1 0 30 0 a 15 15 0 1 0 -30 0"); opacity: 0.7; }
+  .dormido .zzz { animation: flotar 3s infinite; }
+  .dormido .zzz.z2 { animation-delay: 1s; }
+  .dormido .zzz.z3 { animation-delay: 2s; }
+  .sonrisa-grande .boca { d: path("M 50 130 Q 100 195 150 130"); }
+  .zigzag .boca { d: path("M 55 140 L 70 150 L 85 140 L 100 150 L 115 140 L 130 150 L 145 140"); }
+  .pensativo .boca { d: path("M 70 148 Q 100 152 130 142"); }
+  .pensativo .ojo { transform: scale(0.9); transform-origin: center; }
+
+  @keyframes flotar {
+    0% { opacity: 0; transform: translateY(0) scale(0.7); }
+    30% { opacity: 1; }
+    100% { opacity: 0; transform: translateY(-40px) scale(1.1); }
+  }
+
+  #campos-conexion {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 24px;
+    width: 220px;
+  }
+  #campos-conexion input {
+    background: transparent;
+    border: 2px solid #3ecbff;
+    color: #3ecbff;
+    padding: 10px 14px;
+    border-radius: 20px;
+    font-size: 14px;
+    font-family: Arial, sans-serif;
+    text-align: center;
+    outline: none;
+  }
+  #campos-conexion input::placeholder {
+    color: #3ecbff;
+    opacity: 0.5;
+  }
+  #boton-conectar {
+    margin-top: 16px;
+    padding: 14px 36px;
+    font-size: 18px;
+    background: transparent;
+    color: #3ecbff;
+    border: 2px solid #3ecbff;
+    border-radius: 30px;
+    cursor: pointer;
+  }
+  #boton-conectar:hover {
+    background: #3ecbff;
+    color: #000;
+  }
+  #estado-texto {
+    margin-top: 20px;
+    font-size: 14px;
+    color: #7dd3fc;
+    opacity: 0.8;
+  }
+
+  #esquina-reloj {
+    position: fixed;
+    bottom: 24px;
+    left: 24px;
+    opacity: 0.35;
+    color: #7dd3fc;
+    font-size: 13px;
+    line-height: 1.4;
+    pointer-events: none;
+  }
+  #esquina-reloj .hora { font-size: 22px; font-weight: bold; }
+
+  #esquina-cielo {
+    position: fixed;
+    top: 24px;
+    right: 24px;
+    opacity: 0.35;
+    pointer-events: none;
+  }
+  #esquina-cielo svg { width: 36px; height: 36px; }
+
+  #pantalla-llamada {
+    display: none;
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    background: #000;
+  }
+  #grilla-videos {
+    width: 100%;
+    height: 100%;
+    display: grid;
+    gap: 8px;
+    padding: 8px;
+    box-sizing: border-box;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    align-content: center;
+  }
+  .tile-video {
+    position: relative;
+    background: #111;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 3px solid transparent;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    aspect-ratio: 4 / 3;
+  }
+  .tile-video.hablando {
+    border-color: #3ecbff;
+    box-shadow: 0 0 16px #3ecbff;
+  }
+  .tile-video video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  .etiqueta-nombre {
+    position: absolute;
+    bottom: 6px;
+    left: 8px;
+    background: rgba(0,0,0,0.55);
+    padding: 3px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    color: #7dd3fc;
+    font-family: Arial, sans-serif;
+  }
+  #datos-llamada {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    background: rgba(0,0,0,0.5);
+    padding: 10px 16px;
+    border-radius: 8px;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+  #controles-llamada {
+    position: absolute;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 12px;
+  }
+  #boton-colgar {
+    background: #e11d48;
+    color: #fff;
+    border: none;
+    padding: 12px 30px;
+    border-radius: 30px;
+    font-size: 15px;
+    cursor: pointer;
+    font-family: Arial, sans-serif;
+  }
+  #boton-colgar:hover {
+    background: #be123c;
+  }
+  #boton-silenciar {
+    background: transparent;
+    color: #3ecbff;
+    border: 2px solid #3ecbff;
+    padding: 10px 24px;
+    border-radius: 30px;
+    font-size: 15px;
+    cursor: pointer;
+    font-family: Arial, sans-serif;
+  }
+  #boton-silenciar:hover {
+    background: rgba(62, 203, 255, 0.15);
+  }
+  #boton-silenciar.silenciado {
+    background: #7dd3fc;
+    color: #041722;
+    border-color: #7dd3fc;
+  }
+</style>
+</head>
+<body>
+
+  <div id="pantalla-bienvenida">
+    <div id="titulo-nexo">NEXO</div>
+    <svg id="cara-robot" viewBox="0 0 200 200">
+      <ellipse class="ojo ojo-izq" cx="65" cy="90" rx="18" ry="24" />
+      <ellipse class="ojo ojo-der" cx="135" cy="90" rx="18" ry="24" />
+      <circle class="pupila pupila-izq" cx="65" cy="90" r="6" />
+      <circle class="pupila pupila-der" cx="135" cy="90" r="6" />
+      <path class="parpado" d="M 47 90 Q 65 100 83 90" />
+      <path class="parpado" d="M 117 90 Q 135 100 153 90" />
+      <path class="boca" d="M 60 140 Q 100 170 140 140" />
+      <text class="zzz z1" x="150" y="60">z</text>
+      <text class="zzz z2" x="165" y="45">Z</text>
+      <text class="zzz z3" x="180" y="30">Z</text>
+    </svg>
+    <div id="campos-conexion">
+      <input type="text" id="campo-nombre" placeholder="Tu nombre" />
+      <input type="text" id="campo-sala" placeholder="Nombre de la sala" />
+    </div>
+    <button id="boton-conectar">Conectar</button>
+    <div id="estado-texto">Esperando conexión...</div>
+
+    <div id="esquina-reloj">
+      <div class="hora" id="reloj-hora">--:--</div>
+      <div id="reloj-fecha">-- de ---</div>
+    </div>
+
+    <div id="esquina-cielo">
+      <svg viewBox="0 0 24 24" id="icono-cielo"></svg>
+    </div>
+  </div>
+
+  <div id="pantalla-llamada">
+    <div id="grilla-videos"></div>
+
+    <div id="datos-llamada">
+      Duración: <span id="cronometro">00:00</span><br>
+      <span id="estado-conexion">-</span>
+    </div>
+
+    <div id="controles-llamada">
+      <button id="boton-silenciar">Silenciar micrófono</button>
+      <button id="boton-colgar">Colgar</button>
+    </div>
+  </div>
+
+<script>
+const URL_SERVIDOR_SEÑALIZACION = "wss://nexo-3c3p.onrender.com";
+
+const ICE_SERVERS = [
+  { urls: "stun:stun.relay.metered.ca:80" },
+  {
+    urls: "turn:standard.relay.metered.ca:80",
+    username: "2159484b4463174120df1655",
+    credential: "Om2rSFYCd/QfWgPt"
+  },
+  {
+    urls: "turn:standard.relay.metered.ca:443",
+    username: "2159484b4463174120df1655",
+    credential: "Om2rSFYCd/QfWgPt"
+  }
+];
+
+const caraRobot = document.getElementById('cara-robot');
+let temporizadorSomnoliento;
+let temporizadorDormido;
+let contextoAudio;
+
+function obtenerAudio() {
+  if (!contextoAudio) {
+    contextoAudio = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  return contextoAudio;
+}
+
+function sonidoBip(frecuencia, duracion) {
+  const ctx = obtenerAudio();
+  const osc = ctx.createOscillator();
+  const volumen = ctx.createGain();
+  osc.type = 'sine';
+  osc.frequency.value = frecuencia;
+  volumen.gain.setValueAtTime(0.08, ctx.currentTime);
+  volumen.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duracion);
+  osc.connect(volumen);
+  volumen.connect(ctx.destination);
+  osc.start();
+  osc.stop(ctx.currentTime + duracion);
+}
+
+let osciladorRonquido = null;
+function iniciarRonquido() {
+  const ctx = obtenerAudio();
+  osciladorRonquido = ctx.createOscillator();
+  const volumen = ctx.createGain();
+  osciladorRonquido.type = 'sine';
+  osciladorRonquido.frequency.value = 90;
+  volumen.gain.value = 0.03;
+  osciladorRonquido.connect(volumen);
+  volumen.connect(ctx.destination);
+  osciladorRonquido.start();
+
+  let subiendo = true;
+  osciladorRonquido._intervalo = setInterval(() => {
+    const ahora = ctx.currentTime;
+    volumen.gain.linearRampToValueAtTime(subiendo ? 0.06 : 0.01, ahora + 0.8);
+    subiendo = !subiendo;
+  }, 800);
+}
+function detenerRonquido() {
+  if (osciladorRonquido) {
+    clearInterval(osciladorRonquido._intervalo);
+    osciladorRonquido.stop();
+    osciladorRonquido = null;
+  }
+}
+
+function ponerEstado(estado) {
+  caraRobot.className = '';
+  if (estado) caraRobot.classList.add(estado);
+  if (estado !== 'dormido') detenerRonquido();
+}
+
+function reiniciarTemporizadoresReposo() {
+  clearTimeout(temporizadorSomnoliento);
+  clearTimeout(temporizadorDormido);
+  detenerRonquido();
+
+  temporizadorSomnoliento = setTimeout(() => {
+    ponerEstado('somnoliento');
+  }, 8000);
+
+  temporizadorDormido = setTimeout(() => {
+    ponerEstado('dormido');
+    iniciarRonquido();
+  }, 25000);
+}
+
+caraRobot.addEventListener('click', () => {
+  ponerEstado('feliz');
+  sonidoBip(600, 0.15);
+  reiniciarTemporizadoresReposo();
+  setTimeout(() => ponerEstado(null), 1200);
+});
+
+document.addEventListener('keydown', () => {
+  ponerEstado('sorprendido');
+  sonidoBip(880, 0.1);
+  reiniciarTemporizadoresReposo();
+  setTimeout(() => ponerEstado(null), 800);
+});
+
+document.addEventListener('mousemove', reiniciarTemporizadoresReposo);
+
+// ---------- GESTOS ALEATORIOS ----------
+const gestosAleatorios = ['guino', 'sonrisa-grande', 'zigzag', 'pensativo'];
+
+function programarGestoAleatorio() {
+  const espera = 6000 + Math.random() * 9000;
+  setTimeout(() => {
+    if (caraRobot.className.trim() === '') {
+      const gesto = gestosAleatorios[Math.floor(Math.random() * gestosAleatorios.length)];
+      ponerEstado(gesto);
+      setTimeout(() => ponerEstado(null), 900);
+    }
+    programarGestoAleatorio();
+  }, espera);
+}
+programarGestoAleatorio();
+
+const pupilaIzq = document.querySelector('.pupila-izq');
+const pupilaDer = document.querySelector('.pupila-der');
+const centroOjoIzq = { x: 65, y: 90 };
+const centroOjoDer = { x: 135, y: 90 };
+const radioMovimiento = 6;
+
+function moverPupilas(mouseX, mouseY) {
+  const punto = caraRobot.createSVGPoint();
+  punto.x = mouseX;
+  punto.y = mouseY;
+  const ctm = caraRobot.getScreenCTM();
+  if (!ctm) return;
+  const puntoSVG = punto.matrixTransform(ctm.inverse());
+
+  [[pupilaIzq, centroOjoIzq], [pupilaDer, centroOjoDer]].forEach(([pupila, centro]) => {
+    const dx = puntoSVG.x - centro.x;
+    const dy = puntoSVG.y - centro.y;
+    const distancia = Math.sqrt(dx * dx + dy * dy) || 1;
+    const factor = Math.min(radioMovimiento, distancia) / distancia;
+    pupila.setAttribute('transform', `translate(${dx * factor}, ${dy * factor})`);
+  });
+}
+document.addEventListener('mousemove', (e) => moverPupilas(e.clientX, e.clientY));
+
+let esDeNocheGlobal = false;
+let hayLluviaGlobal = false;
+
+function actualizarRelojYFecha() {
+  const ahora = new Date();
+  const horas = String(ahora.getHours()).padStart(2, '0');
+  const minutos = String(ahora.getMinutes()).padStart(2, '0');
+  document.getElementById('reloj-hora').textContent = `${horas}:${minutos}`;
+
+  const dias = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
+  const meses = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+  document.getElementById('reloj-fecha').textContent =
+    `${dias[ahora.getDay()]}, ${ahora.getDate()} de ${meses[ahora.getMonth()]}`;
+
+  esDeNocheGlobal = ahora.getHours() >= 20 || ahora.getHours() < 7;
+  dibujarIconoCielo();
+}
+
+function dibujarIconoCielo() {
+  const icono = document.getElementById('icono-cielo');
+  if (hayLluviaGlobal) {
+    icono.innerHTML =
+      '<path d="M6 14a4 4 0 0 1 .5-7.97A5.5 5.5 0 0 1 17 8.5 3.5 3.5 0 0 1 16.5 15H6z" fill="#7dd3fc" opacity="0.7"/>' +
+      '<line x1="8" y1="17" x2="7" y2="20" stroke="#7dd3fc" stroke-width="1.5" stroke-linecap="round"/>' +
+      '<line x1="12" y1="17" x2="11" y2="21" stroke="#7dd3fc" stroke-width="1.5" stroke-linecap="round"/>' +
+      '<line x1="16" y1="17" x2="15" y2="20" stroke="#7dd3fc" stroke-width="1.5" stroke-linecap="round"/>';
+    return;
+  }
+  icono.innerHTML = esDeNocheGlobal
+    ? '<path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5z" fill="#7dd3fc" />'
+    : '<circle cx="12" cy="12" r="5" fill="#facc15" /><g stroke="#facc15" stroke-width="1.5"><line x1="12" y1="1" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="23"/><line x1="1" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="23" y2="12"/><line x1="4.2" y1="4.2" x2="6.3" y2="6.3"/><line x1="17.7" y1="17.7" x2="19.8" y2="19.8"/><line x1="4.2" y1="19.8" x2="6.3" y2="17.7"/><line x1="17.7" y1="6.3" x2="19.8" y2="4.2"/></g>';
+}
+
+function consultarClima(lat, lon) {
+  fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=precipitation,weather_code`)
+    .then(respuesta => respuesta.json())
+    .then(datos => {
+      const codigo = datos.current.weather_code;
+      const precipitacion = datos.current.precipitation;
+      hayLluviaGlobal = precipitacion > 0 || (codigo >= 51 && codigo <= 99);
+      dibujarIconoCielo();
+    })
+    .catch(() => {
+    });
+}
+
+function iniciarClima() {
+  if (!navigator.geolocation) return;
+  navigator.geolocation.getCurrentPosition(
+    (posicion) => {
+      consultarClima(posicion.coords.latitude, posicion.coords.longitude);
+      setInterval(() => consultarClima(posicion.coords.latitude, posicion.coords.longitude), 15 * 60 * 1000);
+    },
+    () => {
+    }
+  );
+}
+
+actualizarRelojYFecha();
+setInterval(actualizarRelojYFecha, 30000);
+iniciarClima();
+
+reiniciarTemporizadoresReposo();
+
+const pantallaBienvenida = document.getElementById('pantalla-bienvenida');
+const pantallaLlamada = document.getElementById('pantalla-llamada');
+const botonConectar = document.getElementById('boton-conectar');
+const estadoTexto = document.getElementById('estado-texto');
+const cronometroEl = document.getElementById('cronometro');
+const estadoConexionEl = document.getElementById('estado-conexion');
+const grillaVideos = document.getElementById('grilla-videos');
+const campoNombre = document.getElementById('campo-nombre');
+const campoSala = document.getElementById('campo-sala');
+
+let socket;
+let streamLocal;
+let miId = null;
+let salaActual = '';
+let segundos = 0;
+let intervaloCronometro;
+const conexiones = new Map(); // id del participante -> RTCPeerConnection
+
+// ---------- LEER PARAMETROS DE LA URL (sala, nombre, auto) ----------
+const parametrosURL = new URLSearchParams(window.location.search);
+const salaDesdeURL = parametrosURL.get('sala');
+const nombreDesdeURL = parametrosURL.get('nombre');
+const autoDesdeURL = parametrosURL.get('auto');
+
+if (salaDesdeURL) campoSala.value = salaDesdeURL;
+if (nombreDesdeURL) campoNombre.value = nombreDesdeURL;
+if (!campoSala.value) campoSala.value = 'principal';
+
+botonConectar.addEventListener('click', iniciarTodo);
+
+// Si el link viene con auto=1 y ya trae nombre y sala, nos conectamos solos
+if (autoDesdeURL === '1' && nombreDesdeURL && salaDesdeURL) {
+  estadoTexto.textContent = 'Conectando automáticamente...';
+  setTimeout(() => { iniciarTodo(); }, 600);
+}
+
+// ---------- INDICADOR DE "QUIEN ESTA HABLANDO" (por cada video) ----------
+function monitorearHabla(stream, elementoTile) {
+  const ctx = obtenerAudio();
+  const fuente = ctx.createMediaStreamSource(stream);
+  const analizador = ctx.createAnalyser();
+  analizador.fftSize = 256;
+  fuente.connect(analizador);
+  const datos = new Uint8Array(analizador.frequencyBinCount);
+
+  function actualizar() {
+    if (!document.body.contains(elementoTile)) return;
+    analizador.getByteFrequencyData(datos);
+    const promedio = datos.reduce((a, b) => a + b, 0) / datos.length;
+    elementoTile.classList.toggle('hablando', promedio > 12);
+    requestAnimationFrame(actualizar);
+  }
+  actualizar();
+}
+
+// ---------- MANEJO DE LA GRILLA DE VIDEOS ----------
+function agregarTileVideo(id, nombre, stream, esLocal) {
+  let tile = grillaVideos.querySelector(`[data-id="${id}"]`);
+  if (!tile) {
+    tile = document.createElement('div');
+    tile.className = 'tile-video';
+    tile.dataset.id = id;
+
+    const video = document.createElement('video');
+    video.autoplay = true;
+    video.playsInline = true;
+    if (esLocal) video.muted = true;
+
+    const etiqueta = document.createElement('div');
+    etiqueta.className = 'etiqueta-nombre';
+    etiqueta.textContent = esLocal ? `${nombre} (vos)` : nombre;
+
+    tile.appendChild(video);
+    tile.appendChild(etiqueta);
+    grillaVideos.appendChild(tile);
+  }
+  const video = tile.querySelector('video');
+  video.srcObject = stream;
+  monitorearHabla(stream, tile);
+}
+
+function quitarTileVideo(id) {
+  const tile = grillaVideos.querySelector(`[data-id="${id}"]`);
+  if (tile) tile.remove();
+}
+
+function actualizarEstadoSala() {
+  const totalParticipantes = conexiones.size + 1; // +1 por uno mismo
+  estadoConexionEl.textContent = `Sala "${salaActual}" — ${totalParticipantes} participante(s)`;
+}
+
+// ---------- CREAR UNA CONEXION WEBRTC CON UN PARTICIPANTE ----------
+function crearConexionPeer(idRemoto, nombreRemoto, esIniciador) {
+  const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
+  conexiones.set(idRemoto, pc);
+
+  streamLocal.getTracks().forEach(track => {
+    pc.addTrack(track, streamLocal);
+  });
+
+  pc.ontrack = (evento) => {
+    agregarTileVideo(idRemoto, nombreRemoto, evento.streams[0], false);
+  };
+
+  pc.onicecandidate = (evento) => {
+    if (evento.candidate) {
+      socket.send(JSON.stringify({ tipo: 'candidato', para: idRemoto, candidato: evento.candidate }));
+    }
+  };
+
+  pc.onconnectionstatechange = () => {
+    actualizarEstadoSala();
+  };
+
+  if (esIniciador) {
+    pc.createOffer().then((oferta) => {
+      pc.setLocalDescription(oferta);
+      socket.send(JSON.stringify({ tipo: 'oferta', para: idRemoto, oferta }));
+    });
+  }
+
+  return pc;
+}
+
+// ---------- SILENCIAR MICROFONO ----------
+const botonSilenciar = document.getElementById('boton-silenciar');
+let microfonoSilenciado = false;
+
+botonSilenciar.addEventListener('click', () => {
+  if (!streamLocal) return;
+  microfonoSilenciado = !microfonoSilenciado;
+  streamLocal.getAudioTracks().forEach(track => {
+    track.enabled = !microfonoSilenciado;
+  });
+  botonSilenciar.textContent = microfonoSilenciado ? 'Activar micrófono' : 'Silenciar micrófono';
+  botonSilenciar.classList.toggle('silenciado', microfonoSilenciado);
+});
+
+// ---------- INICIAR TODO: PEDIR CAMARA Y CONECTAR AL SERVIDOR ----------
+async function iniciarTodo() {
+  const nombre = campoNombre.value.trim() || 'Invitado';
+  const sala = campoSala.value.trim() || 'principal';
+  salaActual = sala;
+
+  estadoTexto.textContent = "Pidiendo acceso a cámara y micrófono...";
+
+  streamLocal = await navigator.mediaDevices.getUserMedia({
+    video: { width: 640, height: 480 },
+    audio: true
+  });
+
+  mostrarPantallaLlamada();
+  agregarTileVideo('yo', nombre, streamLocal, true);
+
+  estadoTexto.textContent = "Conectando con el servidor...";
+  conectarSeñalizacion(nombre, sala);
+}
+
+function conectarSeñalizacion(nombre, sala) {
+  socket = new WebSocket(URL_SERVIDOR_SEÑALIZACION);
+
+  socket.onopen = () => {
+    socket.send(JSON.stringify({ tipo: 'unirse', sala, nombre }));
+  };
+
+  socket.onmessage = async (evento) => {
+    const datos = JSON.parse(evento.data);
+
+    if (datos.tipo === 'sala-actual') {
+      miId = datos.miId;
+      datos.participantes.forEach((p) => {
+        crearConexionPeer(p.id, p.nombre, true);
+      });
+      actualizarEstadoSala();
+      return;
+    }
+
+    if (datos.tipo === 'nuevo-participante') {
+      crearConexionPeer(datos.id, datos.nombre, false);
+      actualizarEstadoSala();
+      return;
+    }
+
+    if (datos.tipo === 'oferta') {
+      let pc = conexiones.get(datos.de);
+      if (!pc) pc = crearConexionPeer(datos.de, 'Participante', false);
+      await pc.setRemoteDescription(datos.oferta);
+      const respuesta = await pc.createAnswer();
+      await pc.setLocalDescription(respuesta);
+      socket.send(JSON.stringify({ tipo: 'respuesta', para: datos.de, respuesta }));
+      return;
+    }
+
+    if (datos.tipo === 'respuesta') {
+      const pc = conexiones.get(datos.de);
+      if (pc) await pc.setRemoteDescription(datos.respuesta);
+      return;
+    }
+
+    if (datos.tipo === 'candidato') {
+      const pc = conexiones.get(datos.de);
+      if (pc) {
+        try {
+          await pc.addIceCandidate(datos.candidato);
+        } catch (e) {
+          console.log('Error agregando candidato ICE', e);
+        }
+      }
+      return;
+    }
+
+    if (datos.tipo === 'participante-salio') {
+      const pc = conexiones.get(datos.id);
+      if (pc) {
+        pc.close();
+        conexiones.delete(datos.id);
+      }
+      quitarTileVideo(datos.id);
+      actualizarEstadoSala();
+      return;
+    }
+  };
+}
+
+function mostrarPantallaLlamada() {
+  pantallaBienvenida.style.display = 'none';
+  pantallaLlamada.style.display = 'block';
+  segundos = 0;
+  intervaloCronometro = setInterval(() => {
+    segundos++;
+    const min = String(Math.floor(segundos / 60)).padStart(2, '0');
+    const seg = String(segundos % 60).padStart(2, '0');
+    cronometroEl.textContent = `${min}:${seg}`;
+  }, 1000);
+}
+
+const botonColgar = document.getElementById('boton-colgar');
+botonColgar.addEventListener('click', colgarLlamada);
+
+function colgarLlamada() {
+  clearInterval(intervaloCronometro);
+
+  conexiones.forEach((pc) => pc.close());
+  conexiones.clear();
+  grillaVideos.innerHTML = '';
+
+  microfonoSilenciado = false;
+  botonSilenciar.textContent = 'Silenciar micrófono';
+  botonSilenciar.classList.remove('silenciado');
+
+  if (streamLocal) {
+    streamLocal.getTracks().forEach((track) => track.stop());
+    streamLocal = null;
+  }
+  if (socket) {
+    socket.close();
+    socket = null;
+  }
+
+  pantallaLlamada.style.display = 'none';
+  pantallaBienvenida.style.display = 'flex';
+  estadoTexto.textContent = 'Esperando conexión...';
+  ponerEstado(null);
+  reiniciarTemporizadoresReposo();
+}
+</script>
+</body>
+</html>
+
