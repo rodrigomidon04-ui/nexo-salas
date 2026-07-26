@@ -614,7 +614,14 @@ function crearConexionPeer(idRemoto, nombreRemoto, esIniciador) {
   conexiones.set(idRemoto, pc);
 
   streamLocal.getTracks().forEach(track => {
-    pc.addTrack(track, streamLocal);
+    const remitente = pc.addTrack(track, streamLocal);
+    if (track.kind === 'video') {
+      const parametros = remitente.getParameters();
+      if (!parametros.encodings) parametros.encodings = [{}];
+      parametros.encodings[0].maxBitrate = 300000;
+      parametros.degradationPreference = 'maintain-framerate';
+      remitente.setParameters(parametros).catch(() => {});
+    }
   });
 
   pc.ontrack = (evento) => {
@@ -664,7 +671,7 @@ async function iniciarTodo() {
   estadoTexto.textContent = "Pidiendo acceso a cámara y micrófono...";
 
   streamLocal = await navigator.mediaDevices.getUserMedia({
-    video: { width: 640, height: 480 },
+    video: { width: { ideal: 400 }, height: { ideal: 300 }, frameRate: { ideal: 15, max: 20 } },
     audio: true
   });
 
