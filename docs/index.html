@@ -163,74 +163,103 @@
 
   #pantalla-llamada {
     display: none;
-    position: relative;
     width: 100vw;
     height: 100vh;
+    height: 100dvh;
+    background: #000;
+    flex-direction: column;
+  }
+  #video-principal-contenedor {
+    position: relative;
+    flex: 1 1 auto;
+    min-height: 0;
     background: #000;
   }
-  #grilla-videos {
-    width: 100%;
-    height: 100%;
-    display: grid;
-    gap: 8px;
-    padding: 8px;
-    box-sizing: border-box;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    align-content: center;
-  }
-  .tile-video {
-    position: relative;
-    background: #111;
-    border-radius: 10px;
-    overflow: hidden;
-    border: 3px solid transparent;
-    transition: border-color 0.2s ease, box-shadow 0.2s ease;
-    aspect-ratio: 4 / 3;
-  }
-  .tile-video.hablando {
-    border-color: #3ecbff;
-    box-shadow: 0 0 16px #3ecbff;
-  }
-  .tile-video video {
+  #video-principal {
     width: 100%;
     height: 100%;
     object-fit: cover;
     display: block;
+    background: #000;
   }
-  .etiqueta-nombre {
+  #etiqueta-principal {
     position: absolute;
-    bottom: 6px;
-    left: 8px;
+    bottom: 10px;
+    left: 10px;
     background: rgba(0,0,0,0.55);
-    padding: 3px 10px;
+    padding: 4px 12px;
     border-radius: 6px;
-    font-size: 12px;
+    font-size: 13px;
     color: #7dd3fc;
     font-family: Arial, sans-serif;
   }
   #datos-llamada {
     position: absolute;
-    top: 20px;
-    left: 20px;
+    top: 12px;
+    left: 12px;
     background: rgba(0,0,0,0.5);
-    padding: 10px 16px;
+    padding: 8px 14px;
     border-radius: 8px;
-    font-size: 14px;
-    line-height: 1.6;
+    font-size: 13px;
+    line-height: 1.5;
+  }
+  #fila-miniaturas {
+    flex: 0 0 auto;
+    display: flex;
+    gap: 8px;
+    padding: 8px;
+    overflow-x: auto;
+    background: #000;
+  }
+  .miniatura {
+    position: relative;
+    flex: 0 0 100px;
+    aspect-ratio: 4 / 3;
+    background: #111;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 2px solid transparent;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    cursor: pointer;
+  }
+  .miniatura.hablando {
+    border-color: #3ecbff;
+    box-shadow: 0 0 10px #3ecbff;
+  }
+  .miniatura.activa {
+    border-color: #7dd3fc;
+  }
+  .miniatura video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  .miniatura .etiqueta-nombre {
+    position: absolute;
+    bottom: 2px;
+    left: 4px;
+    background: rgba(0,0,0,0.55);
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-size: 10px;
+    color: #7dd3fc;
+    font-family: Arial, sans-serif;
   }
   #controles-llamada {
-    position: absolute;
-    bottom: 24px;
-    left: 50%;
-    transform: translateX(-50%);
+    flex: 0 0 auto;
     display: flex;
+    justify-content: center;
+    align-items: center;
     gap: 12px;
+    padding: 14px 10px;
+    background: #000;
   }
   #boton-colgar {
     background: #e11d48;
     color: #fff;
     border: none;
-    padding: 12px 30px;
+    padding: 14px 26px;
     border-radius: 30px;
     font-size: 15px;
     cursor: pointer;
@@ -243,7 +272,7 @@
     background: transparent;
     color: #3ecbff;
     border: 2px solid #3ecbff;
-    padding: 10px 24px;
+    padding: 12px 22px;
     border-radius: 30px;
     font-size: 15px;
     cursor: pointer;
@@ -256,6 +285,30 @@
     background: #7dd3fc;
     color: #041722;
     border-color: #7dd3fc;
+  }
+
+  /* Pantallas anchas en horizontal: miniaturas al costado en vez de abajo */
+  @media (orientation: landscape) and (min-width: 700px) {
+    #pantalla-llamada {
+      flex-direction: row;
+    }
+    #fila-miniaturas {
+      flex-direction: column;
+      overflow-x: hidden;
+      overflow-y: auto;
+      width: 130px;
+    }
+    .miniatura {
+      flex: 0 0 90px;
+      width: 100%;
+    }
+    #controles-llamada {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      background: rgba(0,0,0,0.6);
+    }
   }
 </style>
 </head>
@@ -293,12 +346,16 @@
   </div>
 
   <div id="pantalla-llamada">
-    <div id="grilla-videos"></div>
-
-    <div id="datos-llamada">
-      Duración: <span id="cronometro">00:00</span><br>
-      <span id="estado-conexion">-</span>
+    <div id="video-principal-contenedor">
+      <video id="video-principal" autoplay playsinline></video>
+      <div id="etiqueta-principal"></div>
+      <div id="datos-llamada">
+        Duración: <span id="cronometro">00:00</span><br>
+        <span id="estado-conexion">-</span>
+      </div>
     </div>
+
+    <div id="fila-miniaturas"></div>
 
     <div id="controles-llamada">
       <button id="boton-silenciar">Silenciar micrófono</button>
@@ -523,7 +580,9 @@ const botonConectar = document.getElementById('boton-conectar');
 const estadoTexto = document.getElementById('estado-texto');
 const cronometroEl = document.getElementById('cronometro');
 const estadoConexionEl = document.getElementById('estado-conexion');
-const grillaVideos = document.getElementById('grilla-videos');
+const videoPrincipal = document.getElementById('video-principal');
+const etiquetaPrincipal = document.getElementById('etiqueta-principal');
+const filaMiniaturas = document.getElementById('fila-miniaturas');
 const campoNombre = document.getElementById('campo-nombre');
 const campoSala = document.getElementById('campo-sala');
 
@@ -534,6 +593,9 @@ let salaActual = '';
 let segundos = 0;
 let intervaloCronometro;
 const conexiones = new Map(); // id del participante -> RTCPeerConnection
+const streamsParticipantes = new Map(); // id -> { stream, nombre, esLocal }
+let idActivo = null;
+let momentoUltimoCambioActivo = 0;
 
 // ---------- LEER PARAMETROS DE LA URL (sala, nombre, auto) ----------
 const parametrosURL = new URLSearchParams(window.location.search);
@@ -553,8 +615,28 @@ if (autoDesdeURL === '1' && nombreDesdeURL && salaDesdeURL) {
   setTimeout(() => { iniciarTodo(); }, 600);
 }
 
-// ---------- INDICADOR DE "QUIEN ESTA HABLANDO" (por cada video) ----------
-function monitorearHabla(stream, elementoTile) {
+// ---------- QUIEN SE MUESTRA EN GRANDE (video principal) ----------
+function marcarActivo(id, forzado) {
+  const ahora = Date.now();
+  if (id === idActivo) return;
+  if (!forzado && ahora - momentoUltimoCambioActivo < 1500) return;
+
+  const datos = streamsParticipantes.get(id);
+  if (!datos) return;
+
+  videoPrincipal.srcObject = datos.stream;
+  etiquetaPrincipal.textContent = datos.esLocal ? `${datos.nombre} (vos)` : datos.nombre;
+
+  filaMiniaturas.querySelectorAll('.miniatura').forEach((mini) => {
+    mini.classList.toggle('activa', mini.dataset.id === id);
+  });
+
+  idActivo = id;
+  momentoUltimoCambioActivo = ahora;
+}
+
+// ---------- INDICADOR DE "QUIEN ESTA HABLANDO" (por cada miniatura) ----------
+function monitorearHabla(stream, elementoMini, id) {
   const ctx = obtenerAudio();
   const fuente = ctx.createMediaStreamSource(stream);
   const analizador = ctx.createAnalyser();
@@ -563,22 +645,26 @@ function monitorearHabla(stream, elementoTile) {
   const datos = new Uint8Array(analizador.frequencyBinCount);
 
   function actualizar() {
-    if (!document.body.contains(elementoTile)) return;
+    if (!document.body.contains(elementoMini)) return;
     analizador.getByteFrequencyData(datos);
     const promedio = datos.reduce((a, b) => a + b, 0) / datos.length;
-    elementoTile.classList.toggle('hablando', promedio > 12);
+    const hablando = promedio > 12;
+    elementoMini.classList.toggle('hablando', hablando);
+    if (hablando) marcarActivo(id, false);
     requestAnimationFrame(actualizar);
   }
   actualizar();
 }
 
-// ---------- MANEJO DE LA GRILLA DE VIDEOS ----------
-function agregarTileVideo(id, nombre, stream, esLocal) {
-  let tile = grillaVideos.querySelector(`[data-id="${id}"]`);
-  if (!tile) {
-    tile = document.createElement('div');
-    tile.className = 'tile-video';
-    tile.dataset.id = id;
+// ---------- AGREGAR / QUITAR PARTICIPANTES (miniatura + video principal) ----------
+function agregarParticipante(id, nombre, stream, esLocal) {
+  streamsParticipantes.set(id, { stream, nombre, esLocal });
+
+  let mini = filaMiniaturas.querySelector(`[data-id="${id}"]`);
+  if (!mini) {
+    mini = document.createElement('div');
+    mini.className = 'miniatura';
+    mini.dataset.id = id;
 
     const video = document.createElement('video');
     video.autoplay = true;
@@ -589,18 +675,33 @@ function agregarTileVideo(id, nombre, stream, esLocal) {
     etiqueta.className = 'etiqueta-nombre';
     etiqueta.textContent = esLocal ? `${nombre} (vos)` : nombre;
 
-    tile.appendChild(video);
-    tile.appendChild(etiqueta);
-    grillaVideos.appendChild(tile);
+    mini.appendChild(video);
+    mini.appendChild(etiqueta);
+    mini.addEventListener('click', () => marcarActivo(id, true));
+    filaMiniaturas.appendChild(mini);
   }
-  const video = tile.querySelector('video');
-  video.srcObject = stream;
-  monitorearHabla(stream, tile);
+
+  mini.querySelector('video').srcObject = stream;
+  monitorearHabla(stream, mini, id);
+
+  if (!idActivo) marcarActivo(id, true);
 }
 
-function quitarTileVideo(id) {
-  const tile = grillaVideos.querySelector(`[data-id="${id}"]`);
-  if (tile) tile.remove();
+function quitarParticipante(id) {
+  streamsParticipantes.delete(id);
+  const mini = filaMiniaturas.querySelector(`[data-id="${id}"]`);
+  if (mini) mini.remove();
+
+  if (idActivo === id) {
+    idActivo = null;
+    const siguienteId = streamsParticipantes.keys().next().value;
+    if (siguienteId) {
+      marcarActivo(siguienteId, true);
+    } else {
+      videoPrincipal.srcObject = null;
+      etiquetaPrincipal.textContent = '';
+    }
+  }
 }
 
 function actualizarEstadoSala() {
@@ -625,7 +726,7 @@ function crearConexionPeer(idRemoto, nombreRemoto, esIniciador) {
   });
 
   pc.ontrack = (evento) => {
-    agregarTileVideo(idRemoto, nombreRemoto, evento.streams[0], false);
+    agregarParticipante(idRemoto, nombreRemoto, evento.streams[0], false);
   };
 
   pc.onicecandidate = (evento) => {
@@ -676,7 +777,7 @@ async function iniciarTodo() {
   });
 
   mostrarPantallaLlamada();
-  agregarTileVideo('yo', nombre, streamLocal, true);
+  agregarParticipante('yo', nombre, streamLocal, true);
 
   estadoTexto.textContent = "Conectando con el servidor...";
   conectarSeñalizacion(nombre, sala);
@@ -741,7 +842,7 @@ function conectarSeñalizacion(nombre, sala) {
         pc.close();
         conexiones.delete(datos.id);
       }
-      quitarTileVideo(datos.id);
+      quitarParticipante(datos.id);
       actualizarEstadoSala();
       return;
     }
@@ -750,7 +851,7 @@ function conectarSeñalizacion(nombre, sala) {
 
 function mostrarPantallaLlamada() {
   pantallaBienvenida.style.display = 'none';
-  pantallaLlamada.style.display = 'block';
+  pantallaLlamada.style.display = 'flex';
   segundos = 0;
   intervaloCronometro = setInterval(() => {
     segundos++;
@@ -768,7 +869,11 @@ function colgarLlamada() {
 
   conexiones.forEach((pc) => pc.close());
   conexiones.clear();
-  grillaVideos.innerHTML = '';
+  streamsParticipantes.clear();
+  filaMiniaturas.innerHTML = '';
+  videoPrincipal.srcObject = null;
+  etiquetaPrincipal.textContent = '';
+  idActivo = null;
 
   microfonoSilenciado = false;
   botonSilenciar.textContent = 'Silenciar micrófono';
