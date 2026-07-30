@@ -2,6 +2,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
 <title>NEXO</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -193,6 +194,19 @@
     color: #7dd3fc;
     font-family: Arial, sans-serif;
   }
+  #aviso-esperando {
+    display: none;
+    position: absolute;
+    inset: 0;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 20px;
+    color: #7dd3fc;
+    opacity: 0.6;
+    font-family: Arial, sans-serif;
+    font-size: 15px;
+  }
   #datos-llamada {
     position: absolute;
     top: 12px;
@@ -249,14 +263,18 @@
     font-family: Arial, sans-serif;
   }
   #controles-llamada {
-    flex: 0 0 auto;
+    position: absolute;
+    bottom: 16px;
+    left: 50%;
+    transform: translateX(-50%);
     display: flex;
     flex-wrap: wrap;
     justify-content: center;
     align-items: center;
     gap: 10px;
-    padding: 14px 10px;
-    background: #000;
+    padding: 10px 14px;
+    background: rgba(0,0,0,0.55);
+    border-radius: 40px;
   }
   #controles-llamada button {
     width: 52px;
@@ -267,6 +285,19 @@
     justify-content: center;
     cursor: pointer;
     flex-shrink: 0;
+  }
+  #boton-girar-camara {
+    width: 36px;
+    height: 36px;
+    background: transparent;
+    color: #7dd3fc;
+    border: 1px solid rgba(125, 211, 252, 0.5);
+    opacity: 0.8;
+    align-self: center;
+  }
+  #boton-girar-camara:hover {
+    opacity: 1;
+    background: rgba(62, 203, 255, 0.15);
   }
   #boton-colgar {
     background: #e11d48;
@@ -348,13 +379,6 @@
       min-width: unset;
       min-height: 64px;
     }
-    #controles-llamada {
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      width: 100%;
-      background: rgba(0,0,0,0.6);
-    }
   }
 </style>
 </head>
@@ -394,20 +418,22 @@
   <div id="pantalla-llamada">
     <div id="video-principal-contenedor">
       <video id="video-principal" autoplay playsinline></video>
+      <div id="aviso-esperando">Esperando a que se conecte alguien más...</div>
       <div id="etiqueta-principal"></div>
       <div id="datos-llamada">
         Duración: <span id="cronometro">00:00</span><br>
         <span id="estado-conexion">-</span>
       </div>
+
+      <div id="controles-llamada">
+        <button id="boton-girar-camara" title="Girar cámara"><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 2l4 4-4 4"></path><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><path d="M7 22l-4-4 4-4"></path><path d="M21 13v2a4 4 0 0 1-4 4H3"></path></svg></button>
+        <button id="boton-silenciar" title="Silenciar micrófono"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="11" rx="3"></rect><path d="M5 10a7 7 0 0 0 14 0"></path><line x1="12" y1="19" x2="12" y2="22"></line></svg></button>
+        <button id="boton-camara" title="Apagar cámara"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="14" height="12" rx="2"></rect><path d="M16 10l6-4v12l-6-4"></path></svg></button>
+        <button id="boton-colgar" title="Colgar"><svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor" style="transform: rotate(135deg);"><path d="M6.6 10.8c1.5 3 4 5.5 7 7l2.3-2.3c.3-.3.7-.4 1.1-.3 1.2.4 2.5.6 3.9.6.6 0 1.1.5 1.1 1.1V21c0 .6-.5 1.1-1.1 1.1C10.5 22.1 1.9 13.5 1.9 3.1 1.9 2.5 2.4 2 3 2h3.1c.6 0 1.1.5 1.1 1.1 0 1.4.2 2.7.6 3.9.1.4 0 .8-.3 1.1L6.6 10.8z"></path></svg></button>
+      </div>
     </div>
 
     <div id="fila-miniaturas"></div>
-
-    <div id="controles-llamada">
-      <button id="boton-silenciar" title="Silenciar micrófono"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="11" rx="3"></rect><path d="M5 10a7 7 0 0 0 14 0"></path><line x1="12" y1="19" x2="12" y2="22"></line></svg></button>
-      <button id="boton-camara" title="Apagar cámara"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="14" height="12" rx="2"></rect><path d="M16 10l6-4v12l-6-4"></path></svg></button>
-      <button id="boton-colgar" title="Colgar"><svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor" style="transform: rotate(135deg);"><path d="M6.6 10.8c1.5 3 4 5.5 7 7l2.3-2.3c.3-.3.7-.4 1.1-.3 1.2.4 2.5.6 3.9.6.6 0 1.1.5 1.1 1.1V21c0 .6-.5 1.1-1.1 1.1C10.5 22.1 1.9 13.5 1.9 3.1 1.9 2.5 2.4 2 3 2h3.1c.6 0 1.1.5 1.1 1.1 0 1.4.2 2.7.6 3.9.1.4 0 .8-.3 1.1L6.6 10.8z"></path></svg></button>
-    </div>
   </div>
 
 <script>
@@ -647,6 +673,7 @@ let momentoUltimoCambioActivo = 0;
 let colgadoManualmente = false;
 let wakeLock = null;
 let camaraApagada = false;
+let modoCamaraActual = 'user';
 
 // ---------- EVITAR QUE SE APAGUE LA PANTALLA MIENTRAS DURA LA LLAMADA ----------
 async function solicitarWakeLock() {
@@ -685,6 +712,10 @@ if (!nombreDesdeURL) {
   const nombreGuardado = localStorage.getItem('nexo_nombre');
   if (nombreGuardado) campoNombre.value = nombreGuardado;
 }
+if (!salaDesdeURL) {
+  const salaGuardada = localStorage.getItem('nexo_sala');
+  if (salaGuardada) campoSala.value = salaGuardada;
+}
 
 botonConectar.addEventListener('click', iniciarTodo);
 
@@ -696,6 +727,9 @@ if (autoDesdeURL === '1' && nombreDesdeURL && salaDesdeURL) {
 
 // ---------- QUIEN SE MUESTRA EN GRANDE (video principal) ----------
 function marcarActivo(id, forzado) {
+  // A nosotros mismos no nos mostramos en la pantalla grande, solo en la miniatura
+  if (id === 'yo') return;
+
   const ahora = Date.now();
   if (id === idActivo) return;
   if (!forzado && ahora - momentoUltimoCambioActivo < 1500) return;
@@ -703,6 +737,7 @@ function marcarActivo(id, forzado) {
   const datos = streamsParticipantes.get(id);
   if (!datos) return;
 
+  document.getElementById('aviso-esperando').style.display = 'none';
   videoPrincipal.srcObject = datos.stream;
   videoPrincipal.muted = !!datos.esLocal;
   etiquetaPrincipal.textContent = datos.esLocal ? `${datos.nombre} (vos)` : datos.nombre;
@@ -760,14 +795,16 @@ function agregarParticipante(id, nombre, stream, esLocal) {
 
     mini.appendChild(video);
     mini.appendChild(etiqueta);
-    mini.addEventListener('click', () => marcarActivo(id, true));
+    if (!esLocal) {
+      mini.addEventListener('click', () => marcarActivo(id, true));
+    }
     filaMiniaturas.appendChild(mini);
   }
 
   mini.querySelector('video').srcObject = stream;
   monitorearHabla(stream, mini, id);
 
-  if (!idActivo) marcarActivo(id, true);
+  if (!esLocal && !idActivo) marcarActivo(id, true);
   actualizarProporcionLayout();
 }
 
@@ -778,12 +815,13 @@ function quitarParticipante(id) {
 
   if (idActivo === id) {
     idActivo = null;
-    const siguienteId = streamsParticipantes.keys().next().value;
+    const siguienteId = [...streamsParticipantes.keys()].find((otroId) => otroId !== 'yo');
     if (siguienteId) {
       marcarActivo(siguienteId, true);
     } else {
       videoPrincipal.srcObject = null;
       etiquetaPrincipal.textContent = '';
+      document.getElementById('aviso-esperando').style.display = 'flex';
     }
   }
   actualizarProporcionLayout();
@@ -889,6 +927,48 @@ botonCamara.addEventListener('click', () => {
   }
 });
 
+// ---------- GIRAR CAMARA (frontal / trasera) ----------
+const botonGirarCamara = document.getElementById('boton-girar-camara');
+
+botonGirarCamara.addEventListener('click', async () => {
+  if (!streamLocal) return;
+  const nuevoModo = modoCamaraActual === 'user' ? 'environment' : 'user';
+
+  try {
+    const nuevoStream = await navigator.mediaDevices.getUserMedia({
+      video: {
+        facingMode: { exact: nuevoModo },
+        width: { ideal: 400 },
+        height: { ideal: 300 },
+        frameRate: { ideal: 15, max: 20 }
+      },
+      audio: false
+    });
+
+    const nuevaPistaVideo = nuevoStream.getVideoTracks()[0];
+    const pistaViejaVideo = streamLocal.getVideoTracks()[0];
+
+    // Reemplazamos la pista en cada conexion activa, sin cortar ni reconectar la llamada
+    conexiones.forEach((pc) => {
+      const remitente = pc.getSenders().find((s) => s.track && s.track.kind === 'video');
+      if (remitente) remitente.replaceTrack(nuevaPistaVideo);
+    });
+
+    streamLocal.removeTrack(pistaViejaVideo);
+    pistaViejaVideo.stop();
+    streamLocal.addTrack(nuevaPistaVideo);
+
+    // Refrescamos nuestra propia vista (miniatura y video principal si corresponde)
+    const miMiniatura = filaMiniaturas.querySelector('[data-id="yo"] video');
+    if (miMiniatura) miMiniatura.srcObject = streamLocal;
+    if (idActivo === 'yo') videoPrincipal.srcObject = streamLocal;
+
+    modoCamaraActual = nuevoModo;
+  } catch (e) {
+    console.log('No se pudo girar la cámara (puede que el dispositivo no tenga dos cámaras)', e);
+  }
+});
+
 // ---------- INICIAR TODO: PEDIR CAMARA Y CONECTAR AL SERVIDOR ----------
 async function iniciarTodo() {
   const nombre = campoNombre.value.trim() || 'Invitado';
@@ -898,6 +978,7 @@ async function iniciarTodo() {
   colgadoManualmente = false;
 
   localStorage.setItem('nexo_nombre', nombre);
+  localStorage.setItem('nexo_sala', sala);
 
   estadoTexto.textContent = "Pidiendo acceso a cámara y micrófono...";
 
