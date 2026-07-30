@@ -249,9 +249,10 @@
   #controles-llamada {
     flex: 0 0 auto;
     display: flex;
+    flex-wrap: wrap;
     justify-content: center;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
     padding: 14px 10px;
     background: #000;
   }
@@ -285,6 +286,57 @@
     background: #7dd3fc;
     color: #041722;
     border-color: #7dd3fc;
+  }
+  #boton-camara {
+    background: transparent;
+    color: #3ecbff;
+    border: 2px solid #3ecbff;
+    padding: 12px 22px;
+    border-radius: 30px;
+    font-size: 15px;
+    cursor: pointer;
+    font-family: Arial, sans-serif;
+  }
+  #boton-camara:hover {
+    background: rgba(62, 203, 255, 0.15);
+  }
+  #boton-camara.silenciado {
+    background: #7dd3fc;
+    color: #041722;
+    border-color: #7dd3fc;
+  }
+  .miniatura.camara-apagada video {
+    opacity: 0;
+  }
+  .miniatura.camara-apagada::after {
+    content: "Cámara apagada";
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 6px;
+    font-size: 9px;
+    color: #7dd3fc;
+    background: #111;
+    font-family: Arial, sans-serif;
+  }
+  #video-principal-contenedor.camara-apagada #video-principal {
+    opacity: 0;
+  }
+  #video-principal-contenedor.camara-apagada::after {
+    content: "Cámara apagada";
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #7dd3fc;
+    font-family: Arial, sans-serif;
+    font-size: 16px;
+    background: #111;
   }
 
   /* Pantallas anchas en horizontal: miniaturas al costado en vez de abajo */
@@ -359,6 +411,7 @@
 
     <div id="controles-llamada">
       <button id="boton-silenciar">Silenciar micrófono</button>
+      <button id="boton-camara">Apagar cámara</button>
       <button id="boton-colgar">Colgar</button>
     </div>
   </div>
@@ -590,12 +643,38 @@ let socket;
 let streamLocal;
 let miId = null;
 let salaActual = '';
+let nombreActual = '';
 let segundos = 0;
 let intervaloCronometro;
 const conexiones = new Map(); // id del participante -> RTCPeerConnection
 const streamsParticipantes = new Map(); // id -> { stream, nombre, esLocal }
 let idActivo = null;
 let momentoUltimoCambioActivo = 0;
+let colgadoManualmente = false;
+let wakeLock = null;
+let camaraApagada = false;
+
+// ---------- EVITAR QUE SE APAGUE LA PANTALLA MIENTRAS DURA LA LLAMADA ----------
+async function solicitarWakeLock() {
+  try {
+    if ('wakeLock' in navigator) {
+      wakeLock = await navigator.wakeLock.request('screen');
+    }
+  } catch (e) {
+    // si el navegador no lo permite, no pasa nada, seguimos sin esto
+  }
+}
+function liberarWakeLock() {
+  if (wakeLock) {
+    wakeLock.release().catch(() => {});
+    wakeLock = null;
+  }
+}
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && streamLocal && !wakeLock) {
+    solicitarWakeLock();
+  }
+});
 
 // ---------- LEER PARAMETROS DE LA URL (sala, nombre, auto) ----------
 const parametrosURL = new URLSearchParams(window.location.search);
@@ -606,6 +685,12 @@ const autoDesdeURL = parametrosURL.get('auto');
 if (salaDesdeURL) campoSala.value = salaDesdeURL;
 if (nombreDesdeURL) campoNombre.value = nombreDesdeURL;
 if (!campoSala.value) campoSala.value = 'principal';
+
+// Si no vino el nombre por la URL, usamos el ultimo que se guardo en este dispositivo
+if (!nombreDesdeURL) {
+  const nombreGuardado = localStorage.getItem('nexo_nombre');
+  if (nombreGuardado) campoNombre.value = nombreGuardado;
+}
 
 botonConectar.addEventListener('click', iniciarTodo);
 
@@ -626,6 +711,9 @@ function marcarActivo(id, forzado) {
 
   videoPrincipal.srcObject = datos.stream;
   etiquetaPrincipal.textContent = datos.esLocal ? `${datos.nombre} (vos)` : datos.nombre;
+
+  const contenedorPrincipal = document.getElementById('video-principal-contenedor');
+  contenedorPrincipal.classList.toggle('camara-apagada', datos.esLocal && camaraApagada);
 
   filaMiniaturas.querySelectorAll('.miniatura').forEach((mini) => {
     mini.classList.toggle('activa', mini.dataset.id === id);
@@ -763,11 +851,35 @@ botonSilenciar.addEventListener('click', () => {
   botonSilenciar.classList.toggle('silenciado', microfonoSilenciado);
 });
 
+// ---------- APAGAR/PRENDER CAMARA ----------
+const botonCamara = document.getElementById('boton-camara');
+
+botonCamara.addEventListener('click', () => {
+  if (!streamLocal) return;
+  camaraApagada = !camaraApagada;
+  streamLocal.getVideoTracks().forEach(track => {
+    track.enabled = !camaraApagada;
+  });
+  botonCamara.textContent = camaraApagada ? 'Activar cámara' : 'Apagar cámara';
+  botonCamara.classList.toggle('silenciado', camaraApagada);
+
+  const miMiniatura = filaMiniaturas.querySelector('[data-id="yo"]');
+  if (miMiniatura) miMiniatura.classList.toggle('camara-apagada', camaraApagada);
+
+  if (idActivo === 'yo') {
+    document.getElementById('video-principal-contenedor').classList.toggle('camara-apagada', camaraApagada);
+  }
+});
+
 // ---------- INICIAR TODO: PEDIR CAMARA Y CONECTAR AL SERVIDOR ----------
 async function iniciarTodo() {
   const nombre = campoNombre.value.trim() || 'Invitado';
   const sala = campoSala.value.trim() || 'principal';
   salaActual = sala;
+  nombreActual = nombre;
+  colgadoManualmente = false;
+
+  localStorage.setItem('nexo_nombre', nombre);
 
   estadoTexto.textContent = "Pidiendo acceso a cámara y micrófono...";
 
@@ -778,16 +890,47 @@ async function iniciarTodo() {
 
   mostrarPantallaLlamada();
   agregarParticipante('yo', nombre, streamLocal, true);
+  solicitarWakeLock();
 
   estadoTexto.textContent = "Conectando con el servidor...";
   conectarSeñalizacion(nombre, sala);
 }
 
+function limpiarConexionesRemotas() {
+  conexiones.forEach((pc) => pc.close());
+  conexiones.clear();
+
+  streamsParticipantes.forEach((datos, id) => {
+    if (id !== 'yo') streamsParticipantes.delete(id);
+  });
+  filaMiniaturas.querySelectorAll('.miniatura').forEach((mini) => {
+    if (mini.dataset.id !== 'yo') mini.remove();
+  });
+
+  if (idActivo !== 'yo') {
+    idActivo = null;
+    marcarActivo('yo', true);
+  }
+}
+
 function conectarSeñalizacion(nombre, sala) {
+  limpiarConexionesRemotas();
+
   socket = new WebSocket(URL_SERVIDOR_SEÑALIZACION);
 
   socket.onopen = () => {
     socket.send(JSON.stringify({ tipo: 'unirse', sala, nombre }));
+    estadoConexionEl.textContent = `Sala "${salaActual}" — 1 participante(s)`;
+  };
+
+  socket.onclose = () => {
+    if (colgadoManualmente || !streamLocal) return;
+    estadoConexionEl.textContent = 'Conexión perdida, reintentando...';
+    setTimeout(() => {
+      if (!colgadoManualmente && streamLocal) {
+        conectarSeñalizacion(nombreActual, salaActual);
+      }
+    }, 3000);
   };
 
   socket.onmessage = async (evento) => {
@@ -805,6 +948,7 @@ function conectarSeñalizacion(nombre, sala) {
     if (datos.tipo === 'nuevo-participante') {
       crearConexionPeer(datos.id, datos.nombre, false);
       actualizarEstadoSala();
+      sonidoBip(700, 0.12);
       return;
     }
 
@@ -844,6 +988,7 @@ function conectarSeñalizacion(nombre, sala) {
       }
       quitarParticipante(datos.id);
       actualizarEstadoSala();
+      sonidoBip(400, 0.15);
       return;
     }
   };
@@ -865,7 +1010,9 @@ const botonColgar = document.getElementById('boton-colgar');
 botonColgar.addEventListener('click', colgarLlamada);
 
 function colgarLlamada() {
+  colgadoManualmente = true;
   clearInterval(intervaloCronometro);
+  liberarWakeLock();
 
   conexiones.forEach((pc) => pc.close());
   conexiones.clear();
@@ -878,6 +1025,9 @@ function colgarLlamada() {
   microfonoSilenciado = false;
   botonSilenciar.textContent = 'Silenciar micrófono';
   botonSilenciar.classList.remove('silenciado');
+  camaraApagada = false;
+  botonCamara.textContent = 'Apagar cámara';
+  botonCamara.classList.remove('silenciado');
 
   if (streamLocal) {
     streamLocal.getTracks().forEach((track) => track.stop());
