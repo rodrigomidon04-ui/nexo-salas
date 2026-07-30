@@ -204,17 +204,19 @@
     line-height: 1.5;
   }
   #fila-miniaturas {
-    flex: 0 0 auto;
+    flex: 0 0 20%;
     display: flex;
     gap: 8px;
     padding: 8px;
-    overflow-x: auto;
+    overflow: auto;
     background: #000;
+    transition: flex-basis 0.3s ease;
   }
   .miniatura {
     position: relative;
-    flex: 0 0 100px;
-    aspect-ratio: 4 / 3;
+    flex: 1 1 0;
+    min-width: 64px;
+    min-height: 48px;
     background: #111;
     border-radius: 8px;
     overflow: hidden;
@@ -256,15 +258,20 @@
     padding: 14px 10px;
     background: #000;
   }
+  #controles-llamada button {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
   #boton-colgar {
     background: #e11d48;
     color: #fff;
     border: none;
-    padding: 14px 26px;
-    border-radius: 30px;
-    font-size: 15px;
-    cursor: pointer;
-    font-family: Arial, sans-serif;
   }
   #boton-colgar:hover {
     background: #be123c;
@@ -273,11 +280,6 @@
     background: transparent;
     color: #3ecbff;
     border: 2px solid #3ecbff;
-    padding: 12px 22px;
-    border-radius: 30px;
-    font-size: 15px;
-    cursor: pointer;
-    font-family: Arial, sans-serif;
   }
   #boton-silenciar:hover {
     background: rgba(62, 203, 255, 0.15);
@@ -291,11 +293,6 @@
     background: transparent;
     color: #3ecbff;
     border: 2px solid #3ecbff;
-    padding: 12px 22px;
-    border-radius: 30px;
-    font-size: 15px;
-    cursor: pointer;
-    font-family: Arial, sans-serif;
   }
   #boton-camara:hover {
     background: rgba(62, 203, 255, 0.15);
@@ -346,13 +343,10 @@
     }
     #fila-miniaturas {
       flex-direction: column;
-      overflow-x: hidden;
-      overflow-y: auto;
-      width: 130px;
     }
     .miniatura {
-      flex: 0 0 90px;
-      width: 100%;
+      min-width: unset;
+      min-height: 64px;
     }
     #controles-llamada {
       position: absolute;
@@ -410,9 +404,9 @@
     <div id="fila-miniaturas"></div>
 
     <div id="controles-llamada">
-      <button id="boton-silenciar">Silenciar micrófono</button>
-      <button id="boton-camara">Apagar cámara</button>
-      <button id="boton-colgar">Colgar</button>
+      <button id="boton-silenciar" title="Silenciar micrófono"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="11" rx="3"></rect><path d="M5 10a7 7 0 0 0 14 0"></path><line x1="12" y1="19" x2="12" y2="22"></line></svg></button>
+      <button id="boton-camara" title="Apagar cámara"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="14" height="12" rx="2"></rect><path d="M16 10l6-4v12l-6-4"></path></svg></button>
+      <button id="boton-colgar" title="Colgar"><svg viewBox="0 0 24 24" width="24" height="24" fill="currentColor" style="transform: rotate(135deg);"><path d="M6.6 10.8c1.5 3 4 5.5 7 7l2.3-2.3c.3-.3.7-.4 1.1-.3 1.2.4 2.5.6 3.9.6.6 0 1.1.5 1.1 1.1V21c0 .6-.5 1.1-1.1 1.1C10.5 22.1 1.9 13.5 1.9 3.1 1.9 2.5 2.4 2 3 2h3.1c.6 0 1.1.5 1.1 1.1 0 1.4.2 2.7.6 3.9.1.4 0 .8-.3 1.1L6.6 10.8z"></path></svg></button>
     </div>
   </div>
 
@@ -710,6 +704,7 @@ function marcarActivo(id, forzado) {
   if (!datos) return;
 
   videoPrincipal.srcObject = datos.stream;
+  videoPrincipal.muted = !!datos.esLocal;
   etiquetaPrincipal.textContent = datos.esLocal ? `${datos.nombre} (vos)` : datos.nombre;
 
   const contenedorPrincipal = document.getElementById('video-principal-contenedor');
@@ -773,6 +768,7 @@ function agregarParticipante(id, nombre, stream, esLocal) {
   monitorearHabla(stream, mini, id);
 
   if (!idActivo) marcarActivo(id, true);
+  actualizarProporcionLayout();
 }
 
 function quitarParticipante(id) {
@@ -790,6 +786,20 @@ function quitarParticipante(id) {
       etiquetaPrincipal.textContent = '';
     }
   }
+  actualizarProporcionLayout();
+}
+
+// La fila de miniaturas ocupa mas espacio a medida que se suman participantes
+// (20% con 1-2 personas, hasta 30% con 5 o mas), asi el video grande se ve
+// bien sin importar cuanta gente haya en la sala.
+function actualizarProporcionLayout() {
+  const total = streamsParticipantes.size;
+  let porcentaje;
+  if (total <= 2) porcentaje = 20;
+  else if (total === 3) porcentaje = 23;
+  else if (total === 4) porcentaje = 26;
+  else porcentaje = 30;
+  filaMiniaturas.style.flexBasis = porcentaje + '%';
 }
 
 function actualizarEstadoSala() {
@@ -837,6 +847,12 @@ function crearConexionPeer(idRemoto, nombreRemoto, esIniciador) {
   return pc;
 }
 
+// ---------- ICONOS DE LOS BOTONES (se intercambian segun el estado) ----------
+const ICONO_MIC_ON = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="11" rx="3"></rect><path d="M5 10a7 7 0 0 0 14 0"></path><line x1="12" y1="19" x2="12" y2="22"></line></svg>';
+const ICONO_MIC_OFF = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="11" rx="3"></rect><path d="M5 10a7 7 0 0 0 14 0"></path><line x1="12" y1="19" x2="12" y2="22"></line><line x1="3" y1="3" x2="21" y2="21"></line></svg>';
+const ICONO_CAM_ON = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="14" height="12" rx="2"></rect><path d="M16 10l6-4v12l-6-4"></path></svg>';
+const ICONO_CAM_OFF = '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="14" height="12" rx="2"></rect><path d="M16 10l6-4v12l-6-4"></path><line x1="2" y1="2" x2="22" y2="22"></line></svg>';
+
 // ---------- SILENCIAR MICROFONO ----------
 const botonSilenciar = document.getElementById('boton-silenciar');
 let microfonoSilenciado = false;
@@ -847,7 +863,8 @@ botonSilenciar.addEventListener('click', () => {
   streamLocal.getAudioTracks().forEach(track => {
     track.enabled = !microfonoSilenciado;
   });
-  botonSilenciar.textContent = microfonoSilenciado ? 'Activar micrófono' : 'Silenciar micrófono';
+  botonSilenciar.innerHTML = microfonoSilenciado ? ICONO_MIC_OFF : ICONO_MIC_ON;
+  botonSilenciar.title = microfonoSilenciado ? 'Activar micrófono' : 'Silenciar micrófono';
   botonSilenciar.classList.toggle('silenciado', microfonoSilenciado);
 });
 
@@ -860,7 +877,8 @@ botonCamara.addEventListener('click', () => {
   streamLocal.getVideoTracks().forEach(track => {
     track.enabled = !camaraApagada;
   });
-  botonCamara.textContent = camaraApagada ? 'Activar cámara' : 'Apagar cámara';
+  botonCamara.innerHTML = camaraApagada ? ICONO_CAM_OFF : ICONO_CAM_ON;
+  botonCamara.title = camaraApagada ? 'Activar cámara' : 'Apagar cámara';
   botonCamara.classList.toggle('silenciado', camaraApagada);
 
   const miMiniatura = filaMiniaturas.querySelector('[data-id="yo"]');
@@ -1023,10 +1041,12 @@ function colgarLlamada() {
   idActivo = null;
 
   microfonoSilenciado = false;
-  botonSilenciar.textContent = 'Silenciar micrófono';
+  botonSilenciar.innerHTML = ICONO_MIC_ON;
+  botonSilenciar.title = 'Silenciar micrófono';
   botonSilenciar.classList.remove('silenciado');
   camaraApagada = false;
-  botonCamara.textContent = 'Apagar cámara';
+  botonCamara.innerHTML = ICONO_CAM_ON;
+  botonCamara.title = 'Apagar cámara';
   botonCamara.classList.remove('silenciado');
 
   if (streamLocal) {
